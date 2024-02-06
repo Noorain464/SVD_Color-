@@ -9,7 +9,7 @@ def embed_watermark(image, watermark_text):
     scale_factor_height = image_height // watermark_height
     scale_factor_width = image_width // watermark_width
     watermark_resized = np.tile(watermark, (scale_factor_height, scale_factor_width))
-    alpha = 0.1  # Adjust alpha value to control watermark visibility
+    alpha = 0.1 
     watermarked_image = image.copy()
     watermarked_image[:, :, 0] = (1 - alpha) * watermarked_image[:, :, 0] + alpha * watermark_resized
     return watermarked_image
