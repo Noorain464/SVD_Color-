@@ -39,7 +39,6 @@ def compress_image(filepath, rank):
 
 def show_compressed_image(compressed_image):
     plt.imshow(compressed_image)
-    plt.axis('off')
     plt.show()
 
 def main():
