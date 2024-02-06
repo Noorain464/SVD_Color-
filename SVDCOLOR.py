@@ -1,25 +1,30 @@
-from matplotlib.image import imread
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.image import imread
 
-def embed_watermark(image, watermark_text):
-    watermark = np.array([[ord(c) for c in watermark_text]])
-    watermark_height, watermark_width = watermark.shape
-    image_height, image_width = image.shape[:2]
-    scale_factor_height = image_height // watermark_height
-    scale_factor_width = image_width // watermark_width
-    watermark_resized = np.tile(watermark, (scale_factor_height, scale_factor_width))
-    alpha = 0.1 
-    watermarked_image = image.copy()
-    watermarked_image[:, :, 0] = (1 - alpha) * watermarked_image[:, :, 0] + alpha * watermark_resized
+def embed_fingerprint(image, scale=0.001):
+    """
+    Embeds a fingerprint into the image.
+    """
+    fingerprint = generate_fingerprint(image.shape[:2], scale)
+    fingerprint_with_channels = np.expand_dims(fingerprint, axis=-1)  # Add a channel axis
+    watermarked_image = image + fingerprint_with_channels
     return watermarked_image
 
+def generate_fingerprint(image_shape, scale):
+    fingerprint_height, fingerprint_width = image_shape
+    fingerprint = np.random.rand(fingerprint_height, fingerprint_width)
+    fingerprint *= scale
+    return fingerprint
 
 def compress_image(filepath, rank):
+    """
+    Compresses the image using Singular Value Decomposition (SVD).
+    """
     color_image = imread(filepath)
-    color_image_red = color_image[:,:,0]
-    color_image_blue = color_image[:,:,1]
-    color_image_green = color_image[:,:,2]
+    color_image_red = color_image[:, :, 0]
+    color_image_blue = color_image[:, :, 1]
+    color_image_green = color_image[:, :, 2]
 
     U_red, s_red, V_red = np.linalg.svd(color_image_red)
     U_blue, s_blue, V_blue = np.linalg.svd(color_image_blue)
@@ -34,22 +39,27 @@ def compress_image(filepath, rank):
     compress_green = np.clip(compress_green, 0, 255).astype(np.uint8)
 
     compressed_array = np.stack((compress_red, compress_blue, compress_green), axis=2)
-    
     return compressed_array
 
 def show_compressed_image(compressed_image):
+    """
+    Displays the compressed image.
+    """
     plt.imshow(compressed_image)
+    plt.title('Compressed Image')
     plt.show()
 
 def main():
     filepath = input("Enter the path to the image file: ")
     rank = int(input("Enter the rank for compression (e.g., 5, 10, 20): "))
-    watermark_text = input("Enter the watermark text: ")
-    
+    scale = float(input("Enter the scale factor for fingerprinting (e.g., 0.001): "))
+
     compressed_image = compress_image(filepath, rank)
-    watermarked_image = embed_watermark(compressed_image, watermark_text)
-    
-    show_compressed_image(watermarked_image)
+    fingerprinted_image = embed_fingerprint(compressed_image, scale)
+
+    plt.imshow(fingerprinted_image)
+    plt.title('Fingerprinted Image')
+    plt.show()
 
 if __name__ == "__main__":
     main()
