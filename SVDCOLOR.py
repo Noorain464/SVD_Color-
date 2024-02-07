@@ -57,15 +57,23 @@ def plot_cumulative_percentage(cumulative_percentage):
     plt.show()
 
 def verify_fingerprint(image, scale):
-   
     fingerprint = generate_fingerprint(image.shape[:2], scale)
     fingerprint_with_channels = np.expand_dims(fingerprint, axis=-1)
+
     watermarked_image = image + fingerprint_with_channels
+    watermarked_image_clipped = np.clip(watermarked_image, 0, 1)
     
-    if np.array_equal(image, watermarked_image):
+    watermarked_image_path = "watermarked_image.png"
+    plt.imsave(watermarked_image_path, watermarked_image_clipped)
+    
+    loaded_watermarked_image = imread(watermarked_image_path)
+    
+    if np.array_equal(watermarked_image_clipped, loaded_watermarked_image):
         print("Fingerprint not detected.")
     else:
         print("Fingerprint detected.")
+
+
 
 def main():
     filepath = input("Enter image file path: ")
