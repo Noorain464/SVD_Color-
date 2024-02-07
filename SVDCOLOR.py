@@ -3,11 +3,9 @@ import numpy as np
 from matplotlib.image import imread
 
 def embed_fingerprint(image, scale=0.001):
-    """
-    Embeds a fingerprint into the image.
-    """
+    
     fingerprint = generate_fingerprint(image.shape[:2], scale)
-    fingerprint_with_channels = np.expand_dims(fingerprint, axis=-1)  # Add a channel axis
+    fingerprint_with_channels = np.expand_dims(fingerprint) 
     watermarked_image = image + fingerprint_with_channels
     return watermarked_image
 
@@ -17,10 +15,8 @@ def generate_fingerprint(image_shape, scale):
     fingerprint *= scale
     return fingerprint
 
-def compress_image(filepath, rank):
-    """
-    Compresses the image using Singular Value Decomposition (SVD).
-    """
+def compress_image(filepath, quality_retention):
+    
     color_image = imread(filepath)
     color_image_red = color_image[:, :, 0]
     color_image_blue = color_image[:, :, 1]
@@ -29,6 +25,12 @@ def compress_image(filepath, rank):
     U_red, s_red, V_red = np.linalg.svd(color_image_red)
     U_blue, s_blue, V_blue = np.linalg.svd(color_image_blue)
     U_green, s_green, V_green = np.linalg.svd(color_image_green)
+
+    cumulative_sum = np.cumsum(s_red)
+    cumulative_percentage = cumulative_sum / np.sum(s_red)
+
+
+    rank = np.argmax(cumulative_percentage >= quality_retention)
 
     compress_red = U_red[:, :rank] @ np.diag(s_red[:rank]) @ V_red[:rank, :]
     compress_blue = U_blue[:, :rank] @ np.diag(s_blue[:rank]) @ V_blue[:rank, :]
@@ -39,27 +41,46 @@ def compress_image(filepath, rank):
     compress_green = np.clip(compress_green, 0, 255).astype(np.uint8)
 
     compressed_array = np.stack((compress_red, compress_blue, compress_green), axis=2)
-    return compressed_array
+    return compressed_array, cumulative_percentage[rank]
 
 def show_compressed_image(compressed_image):
-    """
-    Displays the compressed image.
-    """
+    
     plt.imshow(compressed_image)
-    plt.title('Compressed Image')
     plt.show()
+
+def plot_cumulative_percentage(cumulative_percentage):
+    
+    plt.plot(cumulative_percentage, marker='o', linestyle='-')
+    plt.title('Cumulative Percentage of Information Retained')
+    plt.xlabel('Rank')
+    plt.ylabel('Cumulative Percentage')
+    plt.show()
+
+def verify_fingerprint(image, scale):
+   
+    fingerprint = generate_fingerprint(image.shape[:2], scale)
+    fingerprint_with_channels = np.expand_dims(fingerprint, axis=-1)
+    watermarked_image = image + fingerprint_with_channels
+    
+    if np.array_equal(image, watermarked_image):
+        print("Fingerprint not detected.")
+    else:
+        print("Fingerprint detected.")
 
 def main():
-    filepath = input("Enter the path to the image file: ")
-    rank = int(input("Enter the rank for compression (e.g., 5, 10, 20): "))
+    filepath = input("Enter image file path: ")
+    quality_retention = float(input("Enter the desired quality retention percentage (0 to 100): "))
+    quality_retention /= 100 
     scale = float(input("Enter the scale factor for fingerprinting (e.g., 0.001): "))
 
-    compressed_image = compress_image(filepath, rank)
-    fingerprinted_image = embed_fingerprint(compressed_image, scale)
+    compressed_image, retained_percentage = compress_image(filepath, quality_retention)
+    show_compressed_image(compressed_image)
+    plot_cumulative_percentage(retained_percentage)
 
-    plt.imshow(fingerprinted_image)
-    plt.title('Fingerprinted Image')
-    plt.show()
+    verify = input("Do you want to verify the presence of the fingerprint? (yes/no): ")
+    if verify == "yes":
+        verify_fingerprint(compressed_image, scale)
 
 if __name__ == "__main__":
     main()
+
