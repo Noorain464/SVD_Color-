@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.image import imread
+import os
+from datetime import datetime
 
 def embed_fingerprint(image, scale=0.001):
     
@@ -63,7 +65,8 @@ def verify_fingerprint(image, scale):
     watermarked_image = image + fingerprint_with_channels
     watermarked_image_clipped = np.clip(watermarked_image, 0, 1)
     
-    watermarked_image_path = "watermarked_image.png"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    watermarked_image_path = f"watermarked_image_{timestamp}.png"
     plt.imsave(watermarked_image_path, watermarked_image_clipped)
     
     loaded_watermarked_image = imread(watermarked_image_path)
